@@ -74,10 +74,10 @@ jobs:
     default:
       jobs:
         - build-frontend
-           - test-frontend:
+        - test-frontend:
           requires: [build-frontend]
         - build-backend
-           - test-backend:
+        - test-backend:
           requires: [build-backend]
 
    
