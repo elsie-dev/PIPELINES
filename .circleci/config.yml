@@ -99,13 +99,19 @@ jobs:
           npm run test
 
 
-  workflows:
-    default:
-      jobs:
-        - build-frontend
-          - test-frontend:
+      
+workflows:
+  default:
+    jobs:
+      - build-frontend
+      - test-frontend:
           requires: [build-frontend]
-        - build-backend
-           - test-backend:
+      - scan-frontend:
+          requires: [build-frontend] 
+
+      - build-backend
+      - test-backend:
           requires: [build-backend]
-   
+      - scan-backend:
+          requires: [build-backend]
+        
