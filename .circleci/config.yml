@@ -71,6 +71,36 @@ jobs:
             
   
 
+  
+  scan-frontend:
+    docker: #docker image
+      - image: circleci/node:13.8.0
+    steps: #checkout git,restore from cache
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Run frontend Audit
+          command: |
+            cd frontend
+            npm update
+            npm audit fix --audit-level=critical 
+  
+  scan-backend:
+    docker:
+      - image: circleci/node:13.8.0 #docker image here
+    steps: #checkout code from git,restore cache
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Run backend Audit
+          command: |
+            cd backend
+            npm i
+            npm audit fix --audit-level=critical
+   
+
 
 workflows:
   default:
