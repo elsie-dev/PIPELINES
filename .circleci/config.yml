@@ -170,11 +170,6 @@ workflows:
           requires: [build-backend]
       - scan-backend:
           requires: [build-backend]
-          
-      - deploy-infrastructure:
-          requires: [test-frontend, scan-frontend, test-backend, scan-backend]
-          filters:
-          branches:
-            only:[master]
+     
         
    
