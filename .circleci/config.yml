@@ -173,8 +173,8 @@ workflows:
           
       - deploy-infrastructure:
           requires: [test-frontend, scan-frontend, test-backend, scan-backend]
-          filters
-          branches
+          filters:
+          branches:
             only:[master]
         
    
