@@ -168,12 +168,12 @@ jobs:
     steps:
       # Checkout code from git
       - checkout
-      - add_ssh_keys:
+      - add_ssh_keys: 
           fingerprints: [1c:e1:51:09:8e:8f:13:47:16:be:83:8c:c0:88:f8:fd]
       - attach_workspace:
            at: ~/
+      - image: python:3.7-alpine3.11
 
-          - image: python:3.7-alpine3.11
       # Docker image here that supports Ansible
  
       - run:
