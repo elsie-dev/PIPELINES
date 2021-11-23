@@ -1,27 +1,26 @@
 version: 2.1
 
-destroy-environment:
-  description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
-  parameters:
-    # Add parameter here   
-  steps:
-    - run:
-        name: Install AWS CLI if not Exist
-        when: on_fail
-        command: |
-          if ! [ -x "$(command -v aws)" ]; then
-          pip install awscli
-          else
-          echo "AWS CLI already installed"
-          fi
-
-
-    - run:
-        name: Destroy environments
-        when: on_fail
-        command: |
-          # Your code here
-          exit 1
+  destroy-environment:
+    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
+    steps:
+      - run:
+          name: Install AWS CLI if not Exist
+          when: on_fail
+          command: |
+            if ! [ -x "$(command -v aws)" ]; then
+            pip install awscli
+            else
+            echo "AWS CLI already installed"
+            fi
+      - run:
+          name: Destroy environments
+          when: on_fail
+          command: |
+            
+            aws cloudformation delete-stack --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:6} --region=$AWS_REGION
+            aws s3 rb s3://udapeople-${CIRCLE_WORKFLOW_ID:0:6} --force --region=$AWS_REGION
+            aws cloudformation delete-stack --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:6} --region=$AWS_REGION
+            aws cloudformation delete-stack --stack-name udapeople-cloudfront --region=$AWS_REGION
 
 jobs:
   build-frontend:
@@ -131,24 +130,7 @@ jobs:
       # Checkout code from git
       - checkout
       - run: yum -y install tar gzip 
-      - run:
-          name: Ensure back-end infrastructure exists
-          command: |
-            aws cloudformation deploy \
-              --template-file .circleci/files/backend.yml \
-              --tags project="v2" \
-              --stack-name "udapeople-backend" \
-              --parameter-overrides ID="1"  \
-              # exit 1
-      - run:
-          name: Ensure front-end infrastructure exist
-          command: |
-            aws cloudformation deploy \
-              --template-file .circleci/files/frontend.yml \
-              #--tags project=your-tag \
-              # --stack-name "your front-end stack name with workflow id" \
-              # --parameter-overrides ID="your workflow id"  
-              exit 1
+   
       - run:
           name: Add back-end ip to ansible inventory
           command: |
