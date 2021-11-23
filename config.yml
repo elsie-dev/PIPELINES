@@ -1,4 +1,4 @@
-  version: 2.1
+version: 2.1
 
 destroy-environment:
   description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
@@ -136,10 +136,10 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              #--tags project=your-tag \
-              # --stack-name "your back-end stack name with workflow id" \
-              # --parameter-overrides ID="your workflow id"  
-              exit 1
+              --tags project="v2" \
+              --stack-name "udapeople-backend" \
+              --parameter-overrides ID="1"  \
+              # exit 1
       - run:
           name: Ensure front-end infrastructure exist
           command: |
@@ -158,7 +158,38 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure   
+      # Here's where you will add some code to rollback on failure 
+
+  
+  configure-infrastructure:
+    docker:
+         - image:  amazon/aws-cli
+       
+    steps:
+      # Checkout code from git
+      - checkout
+      - add_ssh_keys: 
+          fingerprints: [1c:e1:51:09:8e:8f:13:47:16:be:83:8c:c0:88:f8:fd]
+      - attach_workspace:
+           at: ~/
+      - image: python:3.7-alpine3.11
+
+      # Docker image here that supports Ansible
+ 
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update ansible
+            apk add --update tar gzip ansible nodejs npm curl
+            pip install awscli
+            # Your code here
+            exit 1
+      - run:
+          name: Configure server
+          command: |
+            # Your code here
+            exit 1
+      # Here's where you will add some code to rollback on failure    
    
 
 
@@ -177,11 +208,12 @@ workflows:
       - scan-backend:
           requires: [build-backend]
 
-      - deploy-infrastructure
-        requires: [test-frontend, scan-frontend, test-backend, scan-backend]
-        filters:
-          branches:
-            only: [test-feature-branch]
+        
+      - deploy-infrastructure:
+           requires: [test-frontend, scan-frontend, test-backend, scan-backend]
+           filters:
+             branches:
+               only: [master]
 
 
         
