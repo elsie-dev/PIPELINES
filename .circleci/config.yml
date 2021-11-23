@@ -173,7 +173,7 @@ jobs:
           paths:
             - project/.circleci/ansible/inventory.txt
 
-      - revert-migrations
+      
       - destroy-environment
 
 
