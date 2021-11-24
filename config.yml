@@ -1,3 +1,4 @@
+
 version: 2.1
 
 commands:
@@ -122,117 +123,63 @@ jobs:
             npm audit fix --audit-level=critical
 
 
+  
   deploy-infrastructure:
-    docker:
-         - image:  amazon/aws-cli
-       
-    steps:
-      # Checkout code from git
-      - checkout
-      - run: yum -y install tar gzip 
-   
-      # - run:
-      #     name: Add back-end ip to ansible inventory
-          
-      #     command: |
-      #         echo "[web]" > .circleci/ansible/inventory.txt
-          
-      #           aws ec2 describe-instances \
-      #             --query 'Reservations[*].Instances[*].PublicIpAddress' \
-      #               --filters "Name=tag:project,Values=udapeople-${CIRCLE_WORKFLOW_ID:0:6}" \
-      #               --output text >> .circleci/ansible/inventory.txt
-      #               curl -H "Content-Type:text/plain" -H "token:${CIRCLE_WORKFLOW_ID}" \
-      #               --request PUT \
-      #               --data `aws ec2 describe-instances \
-      #                 --query 'Reservations[*].Instances[*].PublicIpAddress' \
-      #                 --filters "Name=tag:project,Values=udapeople-${CIRCLE_WORKFLOW_ID:0:6}" \
-      #                 --output text` \
-      #               https://api.memstash.io/values/UdapeopleDns
-      #                 echo URL:https://api.memstash.io/values/UdapeopleDns
-      #                 echo Token:${CIRCLE_WORKFLOW_ID}
+  docker:
+    - image: amazon/aws-cli
+  steps:
+    - checkout
+    - run: yum -y install tar gzip 
+    - run:
+        name: Ensure back-end infrastructure exists
+        command: |
+          aws cloudformation deploy \
+            --template-file .circleci/files/backend.yml \
+            --tags project=udapeople-${CIRCLE_WORKFLOW_ID:0:6} \
+            --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:6} \
+            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:6}"  
+            
+            
+                  
+    - run:
+        name: Ensure front-end infrastructure exist
+        command: |
+          aws cloudformation deploy \
+            --template-file .circleci/files/frontend.yml \
+            --tags project=udapeople-${CIRCLE_WORKFLOW_ID:0:6} \
+            --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:6} \
+            --parameter-overrides WorkflowID=${CIRCLE_WORKFLOW_ID:0:6}  
+
+  
+    - run:
+        name: Add back-end ip to ansible inventory
+        
+        command: |
+            echo "[web]" > .circleci/ansible/inventory.txt
+        
+              aws ec2 describe-instances \
+                --query 'Reservations[*].Instances[*].PublicIpAddress' \
+                  --filters "Name=tag:project,Values=udapeople-${CIRCLE_WORKFLOW_ID:0:6}" \
+                  --output text >> .circleci/ansible/inventory.txt
+                  curl -H "Content-Type:text/plain" -H "token:${CIRCLE_WORKFLOW_ID}" \
+                  --request PUT \
+                  --data `aws ec2 describe-instances \
+                    --query 'Reservations[*].Instances[*].PublicIpAddress' \
+                    --filters "Name=tag:project,Values=udapeople-${CIRCLE_WORKFLOW_ID:0:6}" \
+                    --output text` \
+                  https://api.memstash.io/values/UdapeopleDns
+                    echo URL:https://api.memstash.io/values/UdapeopleDns
+                    echo Token:${CIRCLE_WORKFLOW_ID}
      
        
             
-      - persist_to_workspace:
+    - persist_to_workspace:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory.txt
       # Here's where you will add some code to rollback on failure 
 
-  
-  configure-infrastructure:
-    docker:
-         - image:  amazon/aws-cli
-       
-    steps:
-      # Checkout code from git
-      - checkout
-      - add_ssh_keys: 
-          fingerprints: [1c:e1:51:09:8e:8f:13:47:16:be:83:8c:c0:88:f8:fd]
-      - attach_workspace:
-           at: ~/
-      - image: python:3.7-alpine3.11
-
-      # Docker image here that supports Ansible
  
-      - run:
-          name: Install dependencies
-          command: |
-            apk add --update ansible
-            apk add --update tar gzip ansible nodejs npm curl
-            pip install awscli
-            # Your code here
-            exit 1
-      - run:
-          name: Configure server
-          command: |
-            # Your code here
-            exit 1
-      # Here's where you will add some code to rollback on failure    
-  run-migrations:
-  docker:
-    - image: circleci/node:13.8.0
-  steps:
-    - checkout
-    - restore_cache:
-        keys: [backend-build]
-    - attach_workspace:
-        at: ~/
-    
-          
-    - run:
-        name: Run migrations
-        command: |
-          cd backend 
-          npm run migrations:revert
-          npm run migrations >> migration_output.txt
-          cat migration_output.txt
-          
-          
-    - run:
-        name: Send migration results to memstash
-        command: |
-          
-          cd backend
-          if grep -q "has been executed successfully." migration_output.txt
-          then
-          curl -H "Content-Type: text/plain" -H "token: migration-${CIRCLE_WORKFLOW_ID}" \
-          --request PUT \
-          --data "1" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:6}
-          else
-          curl -H "Content-Type: text/plain" -H "token: migration-${CIRCLE_WORKFLOW_ID}" \
-          --request PUT \
-          --data "0" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:6}
-          fi
-    - save_cache:
-        paths: [backend/node_modules]
-        key: backend-build
-    - revert-migrations
-    - destroy-environment
-
-
-      
-
 
 workflows:
   default:
@@ -254,4 +201,4 @@ workflows:
            requires: [test-frontend, scan-frontend, test-backend, scan-backend]
            filters:
              branches:
-               only: [master]
+               only: [master] 
