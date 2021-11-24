@@ -123,24 +123,7 @@ jobs:
             npm audit fix --audit-level=critical
 
 
-  
   deploy-infrastructure:
-<<<<<<< HEAD
-  docker:
-    - image: amazon/aws-cli
-  steps:
-    - checkout
-    - run: yum -y install tar gzip 
-    - run:
-        name: Ensure back-end infrastructure exists
-        command: |
-          aws cloudformation deploy \
-            --template-file .circleci/files/backend.yml \
-            --tags project=udapeople-${CIRCLE_WORKFLOW_ID:0:6} \
-            --stack-name udapeople-backend-${CIRCLE_WORKFLOW_ID:0:6} \
-            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:6}"  
-            
-=======
     docker:
       - image: amazon/aws-cli
     steps:
@@ -171,50 +154,15 @@ jobs:
           name: Add back-end ip to ansible inventory
           command: |
             echo "[web]" > .circleci/ansible/inventory.txt
->>>>>>> e6649dffc09775f1ad5d8072adb09997f32b4e53
             
-                  
-    - run:
-        name: Ensure front-end infrastructure exist
-        command: |
-          aws cloudformation deploy \
-            --template-file .circleci/files/frontend.yml \
-            --tags project=udapeople-${CIRCLE_WORKFLOW_ID:0:6} \
-            --stack-name udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:6} \
-            --parameter-overrides WorkflowID=${CIRCLE_WORKFLOW_ID:0:6}  
-
-  
-    - run:
-        name: Add back-end ip to ansible inventory
-        
-        command: |
-            echo "[web]" > .circleci/ansible/inventory.txt
-        
-              aws ec2 describe-instances \
+            aws ec2 describe-instances \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+              --filters "Name=tag:project,Values=udapeople-${CIRCLE_WORKFLOW_ID:0:6}" \
+              --output text >> .circleci/ansible/inventory.txt
+            curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID}" \
+              --request PUT \
+              --data `aws ec2 describe-instances \
                 --query 'Reservations[*].Instances[*].PublicIpAddress' \
-<<<<<<< HEAD
-                  --filters "Name=tag:project,Values=udapeople-${CIRCLE_WORKFLOW_ID:0:6}" \
-                  --output text >> .circleci/ansible/inventory.txt
-                  curl -H "Content-Type:text/plain" -H "token:${CIRCLE_WORKFLOW_ID}" \
-                  --request PUT \
-                  --data `aws ec2 describe-instances \
-                    --query 'Reservations[*].Instances[*].PublicIpAddress' \
-                    --filters "Name=tag:project,Values=udapeople-${CIRCLE_WORKFLOW_ID:0:6}" \
-                    --output text` \
-                  https://api.memstash.io/values/UdapeopleDns
-                    echo URL:https://api.memstash.io/values/UdapeopleDns
-                    echo Token:${CIRCLE_WORKFLOW_ID}
-     
-       
-            
-    - persist_to_workspace:
-          root: ~/
-          paths:
-            - project/.circleci/ansible/inventory.txt
-      # Here's where you will add some code to rollback on failure 
-
- 
-=======
                 --filters "Name=tag:project,Values=udapeople-${CIRCLE_WORKFLOW_ID:0:6}" \
                 --output text` \
               https://api.memstash.io/values/UdapeopleDns
@@ -226,94 +174,8 @@ jobs:
           paths:
             - project/.circleci/ansible/inventory.txt
 
-      
+   
       - destroy-environment
-
-
-  configure-infrastructure:
-    docker:
-      - image: python:3.7-alpine3.11
-
-    steps:
-      - checkout
-      - add_ssh_keys:
-          fingerprints: [1c:e1:51:09:8e:8f:13:47:16:be:83:8c:c0:88:f8:fd]
-      - attach_workspace:
-           at: ~/
-
-      - run:
-          name: Install dependencies
-          command: |
-            apk add --update ansible
-            apk add --update tar gzip ansible nodejs npm curl
-            pip install awscli
-            
-      - run:
-          name: Configure server
-          
-          command: |
-            echo ENVIRONMENT=production > "backend/.env"
-            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
-            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
-            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
-            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
-            echo NODE_ENV=production >> "backend/.env"
-            echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"
-            echo TYPEORM_PORT=$TYPEORM_PORT >> "backend/.env"
-            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/.env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
-            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
-            cat backend/.env
-            cd .circleci/ansible
-            cat inventory.txt
-            ansible-playbook -i inventory.txt configure-server.yml
-            
-      #- revert-migrations
-      - destroy-environment
-
-  run-migrations:
-    docker:
-      - image: circleci/node:13.8.0
-    steps:
-      - checkout
-      - restore_cache:
-          keys: [backend-build]
-      - attach_workspace:
-          at: ~/
-     
-            
-      - run:
-          name: Run migrations
-          command: |
-            cd backend 
-            npm run migrations:revert
-            npm run migrations >> migration_output.txt
-            cat migration_output.txt
-            
-           
-      - run:
-          name: Send migration results to memstash
-          command: |
-            
-            cd backend
-            if grep -q "has been executed successfully." migration_output.txt
-            then
-            curl -H "Content-Type: text/plain" -H "token: migration-${CIRCLE_WORKFLOW_ID}" \
-            --request PUT \
-            --data "1" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:6}
-            else
-            curl -H "Content-Type: text/plain" -H "token: migration-${CIRCLE_WORKFLOW_ID}" \
-            --request PUT \
-            --data "0" https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:6}
-            fi
-      - save_cache:
-          paths: [backend/node_modules]
-          key: backend-build
-      
-      - destroy-environment
-
-
->>>>>>> e6649dffc09775f1ad5d8072adb09997f32b4e53
 
 workflows:
   default:
@@ -335,17 +197,4 @@ workflows:
            requires: [test-frontend, scan-frontend, test-backend, scan-backend]
            filters:
              branches:
-<<<<<<< HEAD
-               only: [master]
-=======
-               only: [master]
-
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]
-      - run-migrations:
-          requires: [configure-infrastructure]
-        
-
-
-        
->>>>>>> e6649dffc09775f1ad5d8072adb09997f32b4e53
+               only: [master] 
